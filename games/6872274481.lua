@@ -4324,7 +4324,6 @@ run(function()
 	})
 end)
 
-local Scaffold
 local Expand
 local Downwards
 local Diagonal
@@ -4411,13 +4410,11 @@ local function getScaffoldBlock()
 end
 
 -- Animation manipulation
-local jumpAnim = workspace[lplr.Name].Animate.jump.JumpAnim:Clone()
-local fallAnim = workspace[lplr.Name].Animate.fall.FallAnim:Clone()
-local idleAnim = workspace[lplr.Name].Animate.idle.Animation1:Clone()
-local towerAnimTrack
-local jumpAnimId = jumpAnim.AnimationId
-local fallAnimId = fallAnim.AnimationId
-local runAnimId = "http://www.roblox.com/asset/?id=507767714"
+local jumpAnim = Instance.new("Animation")
+jumpAnim.AnimationId = "http://www.roblox.com/asset/?id=507765000"
+local fallAnim = Instance.new("Animation")
+fallAnim.AnimationId = "http://www.roblox.com/asset/?id=507767968"
+local jumpTrack, fallTrack
 
 Scaffold = vape.Categories.Utility:CreateModule({
     Name = 'Scaffold',
@@ -4443,10 +4440,25 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                 local humanoid = entitylib.character.Humanoid
                                 if root and humanoid then
                                     local wool = getScaffoldBlock()
-                                    local moveDir = humanoid.MoveDirection
-                                    
-                                    if wool or not LimitItem.Enabled then
+                                    -- Only apply velocity if we have blocks or LimitItem is off
+                                    if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
                                         root.Velocity = Vector3.new(root.Velocity.X, 38, root.Velocity.Z)
+                                        
+                                        -- Play jump animation when going up
+                                        if not jumpTrack or not jumpTrack.IsPlaying then
+                                            jumpTrack = humanoid:LoadAnimation(jumpAnim)
+                                            jumpTrack.Priority = Enum.AnimationPriority.Action
+                                            jumpTrack:Play()
+                                            if fallTrack then fallTrack:Stop() end
+                                        end
+                                    else
+                                        -- Play fall animation when going down (not applying upward velocity)
+                                        if root.Velocity.Y < 0 and (not fallTrack or not fallTrack.IsPlaying) then
+                                            fallTrack = humanoid:LoadAnimation(fallAnim)
+                                            fallTrack.Priority = Enum.AnimationPriority.Action
+                                            fallTrack:Play()
+                                            if jumpTrack then jumpTrack:Stop() end
+                                        end
                                     end
                                     
                                     -- Place blocks if we have them
@@ -4481,6 +4493,11 @@ Scaffold = vape.Categories.Utility:CreateModule({
                     task.cancel(towerThread)
                     towerThread = nil
                 end
+                -- Stop animation tracks when stopping tower
+                if jumpTrack then jumpTrack:Stop() end
+                if fallTrack then fallTrack:Stop() end
+                jumpTrack = nil
+                fallTrack = nil
             end
             
             -- Input handlers for tower
@@ -4515,8 +4532,6 @@ Scaffold = vape.Categories.Utility:CreateModule({
             -- Main scaffold loop
             repeat
                 if entitylib.isAlive then
-                    local root = entitylib.character.RootPart
-                    local humanoid = entitylib.character.Humanoid
                     local wool, amount = getScaffoldBlock()
 
                     if Mouse.Enabled and not inputService:IsMouseButtonPressed(0) then
@@ -4530,13 +4545,14 @@ Scaffold = vape.Categories.Utility:CreateModule({
                     end
 
                     if wool then
-                        local moveDir = humanoid.MoveDirection
-                        local hipHeight = humanoid.HipHeight
+                        local root = entitylib.character.RootPart
+                        local moveDir = entitylib.character.Humanoid.MoveDirection
+                        local hipHeight = entitylib.character.HipHeight
                         local downOffset = Downwards.Enabled and inputService:IsKeyDown(Enum.KeyCode.LeftShift) and 4.5 or 1.5
                         local basePos = root.Position - Vector3.new(0, hipHeight + downOffset, 0)
 
                         -- Smoother placement: 1-stud intervals with rate limiting
-                        for i = 1, Expand.GetRandomValue() do
+                        for i = 1, Expand.Value do
                             if tick() - lastPlacementTime < 0.02 then break end -- Rate limit: max 50 placements/sec
                             local currentpos = roundPos(basePos + moveDir * i)
                             
@@ -4562,68 +4578,25 @@ Scaffold = vape.Categories.Utility:CreateModule({
                             lastpos = currentpos
                         end
                     end
-
-                    if Tower.Enabled then
-                        if wool or not LimitItem.Enabled then
-                            local moveDir = humanoid.MoveDirection
-                            local vel = root.Velocity
-                            local targetAnim
-                            if vel.Y > 0.1 then  -- going up
-                                targetAnim = jumpAnim
-                            elseif vel.Y < -0.1 then  -- going down
-                                targetAnim = fallAnim
-                            end
-                            if targetAnim then
-                                -- Stop jump, fall, and run animations to prevent mixing
-                                for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-                                    if track ~= towerAnimTrack and (track.Animation.AnimationId == jumpAnimId or track.Animation.AnimationId == fallAnimId or track.Animation.AnimationId == runAnimId) then
-                                        track:Stop()
-                                    end
-                                end
-                                if not towerAnimTrack or towerAnimTrack.Animation ~= targetAnim then
-                                    if towerAnimTrack then
-                                        towerAnimTrack:Stop()
-                                    end
-                                    towerAnimTrack = humanoid:LoadAnimation(targetAnim)
-                                    towerAnimTrack.Priority = Enum.AnimationPriority.Core
-                                    towerAnimTrack.Looped = true
-                                    towerAnimTrack:Play()
-                                end
-                            else
-                                if towerAnimTrack then
-                                    towerAnimTrack:Stop()
-                                    towerAnimTrack = nil
-                                end
-                            end
-                        else
-                            if towerAnimTrack then
-                                towerAnimTrack:Stop()
-                                towerAnimTrack = nil
-                            end
-                        end
-                    end
                 end
                 task.wait(0.01)
             until not Scaffold.Enabled
         else
             Label = nil
             -- Stop tracks when disabling
-            if towerAnimTrack then
-                towerAnimTrack:Stop()
-                towerAnimTrack = nil
-            end
+            if jumpTrack then jumpTrack:Stop() end
+            if fallTrack then fallTrack:Stop() end
+            jumpTrack = nil
+            fallTrack = nil
         end
     end,
     Tooltip = 'Helps you make bridges/scaffold walk.'
 })
 
-Expand = Scaffold:CreateTwoSlider({
+Expand = Scaffold:CreateSlider({
     Name = 'Expand',
     Min = 1,
-    Max = 6,
-    DefaultMin = 1,
-    DefaultMax = 6,
-    Darker = true
+    Max = 6
 })
 
 Tower = Scaffold:CreateToggle({
