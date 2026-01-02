@@ -4446,18 +4446,18 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                         
                                         -- Play jump animation when going up
                                         if not jumpTrack or not jumpTrack.IsPlaying then
+                                            if fallTrack then fallTrack:Stop() end
                                             jumpTrack = humanoid:LoadAnimation(jumpAnim)
                                             jumpTrack.Priority = Enum.AnimationPriority.Action
                                             jumpTrack:Play()
-                                            if fallTrack then fallTrack:Stop() end
                                         end
                                     else
                                         -- Play fall animation when going down (not applying upward velocity)
                                         if root.Velocity.Y < 0 and (not fallTrack or not fallTrack.IsPlaying) then
+                                            if jumpTrack then jumpTrack:Stop() end
                                             fallTrack = humanoid:LoadAnimation(fallAnim)
                                             fallTrack.Priority = Enum.AnimationPriority.Action
                                             fallTrack:Play()
-                                            if jumpTrack then jumpTrack:Stop() end
                                         end
                                     end
                                     
