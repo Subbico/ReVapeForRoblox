@@ -4434,6 +4434,10 @@ Scaffold = vape.Categories.Utility:CreateModule({
                     while Scaffold.Enabled and Tower.Enabled and (inputService:IsKeyDown(Enum.KeyCode.Space) or
                         (inputService.TouchEnabled and lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton.ImageTransparency < 1)) do
                         local currentTime = tick()
+                        local isMoving = entitylib.character.Humanoid.MoveDirection.Magnitude > 0
+                        local velocity = isMoving and TowerVelocity.Value or 38
+                        local blocksToPlace = isMoving and TowerBlocks.Value or 1
+                        
                         if currentTime - lastPlace >= (1 / TowerCPS.GetRandomValue()) then
                             if entitylib.isAlive then
                                 local root = entitylib.character.RootPart
@@ -4442,7 +4446,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                     local wool = getScaffoldBlock()
                                     -- Only apply velocity if we have blocks or LimitItem is off
                                     if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        root.Velocity = Vector3.new(root.Velocity.X, TowerVelocity.Value, root.Velocity.Z)
+                                        root.Velocity = Vector3.new(root.Velocity.X, velocity, root.Velocity.Z)
                                         
                                         -- Play jump animation when going up
                                         if not jumpTrack or not jumpTrack.IsPlaying then
@@ -4463,7 +4467,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                     
                                     -- Place blocks if we have them
                                     if wool and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        for i = 1, TowerBlocks.Value do
+                                        for i = 1, blocksToPlace do
                                             local pos = root.Position - Vector3.new(0, entitylib.character.HipHeight + 1.5 + (i * 3), 0)
                                             local roundedPos = roundPos(pos)
                                             
