@@ -4538,7 +4538,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                         local basePos = root.Position - Vector3.new(0, hipHeight + downOffset, 0)
 
                         -- Smoother placement: 1-stud intervals with rate limiting
-                        for i = 1, Expand.GetRandomValue() do
+                        for i = 1, math.floor(Expand.GetRandomValue()) do
                             if tick() - lastPlacementTime < 0.02 then break end -- Rate limit: max 50 placements/sec
                             local currentpos = roundPos(basePos + moveDir * i)
                             
@@ -4606,7 +4606,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                 task.wait(0.01)
             until not Scaffold.Enabled
         else
-            label = nil
+            Label = nil
             -- Stop tracks when disabling
             if towerAnimTrack then
                 towerAnimTrack:Stop()
