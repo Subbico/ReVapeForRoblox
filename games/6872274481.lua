@@ -4606,7 +4606,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                 task.wait(0.01)
             until not Scaffold.Enabled
         else
-            Label = nil
+            label = nil
             -- Stop tracks when disabling
             if towerAnimTrack then
                 towerAnimTrack:Stop()
