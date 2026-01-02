@@ -4411,14 +4411,12 @@ local function getScaffoldBlock()
 end
 
 -- Animation manipulation
-local jumpAnim = Instance.new("Animation")
-jumpAnim.AnimationId = "http://www.roblox.com/asset/?id=507765000"
-local fallAnim = Instance.new("Animation")
-fallAnim.AnimationId = "http://www.roblox.com/asset/?id=507767968"
+local jumpAnim = workspace[lplr.Name].Animate.jump.JumpAnim:Clone()
+local fallAnim = workspace[lplr.Name].Animate.fall.FallAnim:Clone()
 local idleAnim = workspace[lplr.Name].Animate.idle.Animation1:Clone()
 local towerAnimTrack
-local jumpAnimId = "http://www.roblox.com/asset/?id=507765000"
-local fallAnimId = "http://www.roblox.com/asset/?id=507767968"
+local jumpAnimId = jumpAnim.AnimationId
+local fallAnimId = fallAnim.AnimationId
 local runAnimId = "http://www.roblox.com/asset/?id=507767714"
 
 Scaffold = vape.Categories.Utility:CreateModule({
@@ -4573,11 +4571,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                             if vel.Y > 0.1 then  -- going up
                                 targetAnim = jumpAnim
                             elseif vel.Y < -0.1 then  -- going down
-                                if moveDir.Magnitude > 0 then
-                                    targetAnim = fallAnim
-                                else
-                                    targetAnim = idleAnim
-                                end
+                                targetAnim = fallAnim
                             end
                             if targetAnim then
                                 -- Stop jump, fall, and run animations to prevent mixing
