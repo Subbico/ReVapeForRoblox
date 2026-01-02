@@ -4552,7 +4552,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                         local basePos = root.Position - Vector3.new(0, hipHeight + downOffset, 0)
 
                         -- Smoother placement: 1-stud intervals with rate limiting
-                        local expandValue = type(Expand.Value) == "table" and Expand.Value[2] or Expand.Value
+                        local expandValue = type(ExpandTwo.Value) == "table" and ExpandTwo.Value[2] or Expand.Value
                         for i = 1, expandValue do
                             if tick() - lastPlacementTime < 0.02 then break end -- Rate limit: max 50 placements/sec
                             local currentpos = roundPos(basePos + moveDir * i)
@@ -4594,8 +4594,15 @@ Scaffold = vape.Categories.Utility:CreateModule({
     Tooltip = 'Helps you make bridges/scaffold walk.'
 })
 
-Expand = Scaffold:CreateTwoSlider({
+Expand = Scaffold:CreateSlider({
     Name = 'Expand',
+    Min = 1,
+    Max = 6,
+    Default = 3
+})
+
+ExpandTwo = Scaffold:CreateTwoSlider({
+    Name = 'Expand Two',
     Min = 1,
     Max = 6,
     DefaultMin = 1,
