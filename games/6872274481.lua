@@ -4431,7 +4431,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                 if towerThread then return end
                 towerThread = task.spawn(function()
                     local lastBlockPos = nil
-                    while Scaffold.Enabled and Tower.Enabled and (inputService:IsKeyDown(Enum.KeyCode.Space) or 
+                    while Scaffold.Enabled and Tower.Enabled and (inputService:IsKeyDown(Enum.KeyCode.Space) or
                         (inputService.TouchEnabled and lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton.ImageTransparency < 1)) do
                         local currentTime = tick()
                         if currentTime - lastPlace >= (1 / TowerCPS.GetRandomValue()) then
@@ -4442,7 +4442,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                     local wool = getScaffoldBlock()
                                     -- Only apply velocity if we have blocks or LimitItem is off
                                     if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        root.Velocity = Vector3.new(root.Velocity.X, 38, root.Velocity.Z)
+                                        root.Velocity = Vector3.new(root.Velocity.X, TowerVelocity.Value, root.Velocity.Z)
                                         
                                         -- Play jump animation when going up
                                         if not jumpTrack or not jumpTrack.IsPlaying then
@@ -4463,18 +4463,20 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                     
                                     -- Place blocks if we have them
                                     if wool and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        local pos = root.Position - Vector3.new(0, entitylib.character.HipHeight + 1.5, 0)
-                                        local roundedPos = roundPos(pos)
-                                        
-                                        -- Only do proximity check if position changed
-                                        if lastBlockPos ~= roundedPos then
-                                            local block, blockpos = getPlacedBlock(roundedPos)
-                                            if not block then
-                                                blockpos = checkAdjacent(blockpos * 3) and blockpos * 3 or blockProximity(pos)
-                                                if blockpos then
-                                                    task.spawn(bedwars.placeBlock, blockpos, wool, false)
-                                                    lastPlace = currentTime
-                                                    lastBlockPos = roundedPos
+                                        for i = 1, TowerBlocks.Value do
+                                            local pos = root.Position - Vector3.new(0, entitylib.character.HipHeight + 1.5 + (i * 3), 0)
+                                            local roundedPos = roundPos(pos)
+                                            
+                                            -- Only do proximity check if position changed
+                                            if lastBlockPos ~= roundedPos then
+                                                local block, blockpos = getPlacedBlock(roundedPos)
+                                                if not block then
+                                                    blockpos = checkAdjacent(blockpos * 3) and blockpos * 3 or blockProximity(pos)
+                                                    if blockpos then
+                                                        task.spawn(bedwars.placeBlock, blockpos, wool, false)
+                                                        lastPlace = currentTime
+                                                        lastBlockPos = roundedPos
+                                                    end
                                                 end
                                             end
                                         end
@@ -4658,6 +4660,20 @@ TowerCPS = Scaffold:CreateTwoSlider({
     DefaultMin = 20,
     DefaultMax = 20,
     Darker = true
+})
+
+TowerVelocity = Scaffold:CreateSlider({
+    Name = 'Tower Velocity',
+    Min = 10,
+    Max = 100,
+    Default = 38
+})
+
+TowerBlocks = Scaffold:CreateSlider({
+    Name = 'Tower Blocks',
+    Min = 1,
+    Max = 4,
+    Default = 1
 })
 	
 --[[run(function()
