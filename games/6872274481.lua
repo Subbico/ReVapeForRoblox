@@ -4538,7 +4538,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                         local basePos = root.Position - Vector3.new(0, hipHeight + downOffset, 0)
 
                         -- Smoother placement: 1-stud intervals with rate limiting
-                        for i = 1, math.floor(Expand.GetRandomValue()) do
+                        for i = 1, Expand.GetRandomValue() do
                             if tick() - lastPlacementTime < 0.02 then break end -- Rate limit: max 50 placements/sec
                             local currentpos = roundPos(basePos + moveDir * i)
                             
@@ -4580,6 +4580,12 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                 end
                             end
                             if targetAnim then
+                                -- Stop jump, fall, and run animations to prevent mixing
+                                for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                                    if track ~= towerAnimTrack and (track.Animation.AnimationId == jumpAnimId or track.Animation.AnimationId == fallAnimId or track.Animation.AnimationId == runAnimId) then
+                                        track:Stop()
+                                    end
+                                end
                                 if not towerAnimTrack or towerAnimTrack.Animation ~= targetAnim then
                                     if towerAnimTrack then
                                         towerAnimTrack:Stop()
