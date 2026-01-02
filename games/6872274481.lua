@@ -4593,10 +4593,13 @@ Scaffold = vape.Categories.Utility:CreateModule({
     Tooltip = 'Helps you make bridges/scaffold walk.'
 })
 
-Expand = Scaffold:CreateSlider({
+Expand = Scaffold:CreateTwoSlider({
     Name = 'Expand',
     Min = 1,
-    Max = 6
+    Max = 6,
+    DefaultMin = 1,
+    DefaultMax = 3,
+    Darker = true
 })
 
 Tower = Scaffold:CreateToggle({
