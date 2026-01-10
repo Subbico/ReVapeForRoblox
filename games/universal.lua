@@ -8852,51 +8852,76 @@ run(function()
 	local function CreateUsername()
 		return tostring(GenLib:Username())
 	end
+
 	local function CreatePassword()
-		local values = {Length = 10,Sets = {UC = true, LC = true, N = true, S = true, E = false}}
+		local values = {
+			Length = 10,
+			Sets = { UC = true, LC = true, N = true, S = true, E = false }
+		}
 		return tostring(GenLib:Password(values))
 	end
+
 	local function CreateHWID()
 		return tostring(GenLib:UUID())
 	end
 
-	local AC	
+	local AC
 	AC = vape.Legit:CreateModule({
 		Name = "Account Creator",
-		Tooltip = "Creates a account for you!",
+		Tooltip = "Creates an account for you!",
 		Function = function(callback)
 			if not callback then return end
-			if callback then
-				AC:Toggle(false)
-				local NU = CreateUsername()
-				local NP = CreatePassword()
-				local NH = CreateHWID()
-				if #NU ~= 4 then
-					vape:CreateNotification("Account Creator", "Username wasn't 4 letters long, {"..#NU.."} DM "..vape.Discord,10,"warning")
-					return
-				end
-				local db, msg = loginlib:CreateAccount(NU,NP,NH)
-				if not db then
-					vape:CreateNotification("Onyx",msg or "403 error",30,"alert")
-				end 
-				-- made like this
-local Injection = string.format(
--- Inject this for now on, Created by Subbico 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Subbico/ReVapeForRoblox/main/NewMainScript.lua", true))({
-    username = "%s",
-    password = "%s"
-})
-, NU,NP)
-				setclipboard(Injection)
-				vape:CreateNotification("Account Creator", "Check ur clipboard!",5)
-				task.wait(2)
-				vape:CreateNotification("Account Creator", "Uninjecting... Please reinject with the new script!",3,'warning')
-				task.wait(3 + 0.045)
-				vape:Uninject()
+
+			-- instantly turn off module
+			AC:Toggle(false)
+
+			local NU = CreateUsername()
+			local NP = CreatePassword()
+			local NH = CreateHWID()
+
+			-- username length check
+			if #NU ~= 4 then
+				vape:CreateNotification(
+					"Account Creator",
+					"Username wasn't 4 letters long {" .. #NU .. "} DM " .. vape.Discord,
+					10,
+					"warning"
+				)
+				return
 			end
-		end	
+
+			local db, msg = loginlib:CreateAccount(NU, NP, NH)
+			if not db then
+				vape:CreateNotification("Onyx", msg or "403 error", 30, "alert")
+				return
+			end
+
+			-- properly formatted injection string
+			local Injection = string.format([[
+-- Inject this from now on, Created by Subbico
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Subbico/ReVapeForRoblox/main/NewMainScript.lua", true))({
+	username = "%s",
+	password = "%s"
+})
+]], NU, NP)
+
+			setclipboard(Injection)
+			vape:CreateNotification("Account Creator", "Check your clipboard!", 5)
+
+			task.wait(2)
+			vape:CreateNotification(
+				"Account Creator",
+				"Uninjecting... Please reinject with the new script!",
+				3,
+				"warning"
+			)
+
+			task.wait(3)
+			vape:Uninject()
+		end
 	})
 end)
+
 
 
 run(function()
