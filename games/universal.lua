@@ -14,7 +14,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/soryed/ReVapeForRoblox/'..readfile('ReVape/profiles/commit.txt')..'/'..select(1, path:gsub('ReVape/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/Subbico/ReVapeForRoblox/'..readfile('ReVape/profiles/commit.txt')..'/'..select(1, path:gsub('ReVape/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -8039,7 +8039,7 @@ task.spawn(function()
                 end)
             else
                 pcall(function()
-                    loadstring(game:HttpGet('https://raw.githubusercontent.com/soryed/ReVapeForRoblox/main/loader.lua', true))()
+                    loadstring(game:HttpGet('https://raw.githubusercontent.com/Subbico/ReVapeForRoblox/main/loader.lua', true))()
                 end)
             end
 
@@ -8933,8 +8933,8 @@ end)
 				end 
 				-- made like this
 local Injection = string.format(
--- Inject this for now on, Created by Soryed 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/soryed/ReVapeForRoblox/main/NewMainScript.lua", true))({
+-- Inject this for now on, Created by Subbico 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Subbico/ReVapeForRoblox/main/NewMainScript.lua", true))({
     username = "%s",
     password = "%s"
 })
