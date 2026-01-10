@@ -8848,7 +8848,7 @@ run(function()
 end)
 
 
-task.spawn(function()
+run(function()
 	local function CreateUsername()
 		return tostring(GenLib:Username())
 	end
