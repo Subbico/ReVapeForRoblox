@@ -8849,19 +8849,40 @@ end)
 
 run(function()
 	local function CreateUsername()
-		return tostring(GenLib:Username())
+		local success, result = pcall(function()
+			return tostring(GenLib:Username())
+		end)
+		if not success then
+			warn("CreateUsername failed:", result)
+			return nil
+		end
+		return result
 	end
 
 	local function CreatePassword()
-		local values = {
-			Length = 10,
-			Sets = { UC = true, LC = true, N = true, S = true, E = false }
-		}
-		return tostring(GenLib:Password(values))
+		local success, result = pcall(function()
+			local values = {
+				Length = 10,
+				Sets = { UC = true, LC = true, N = true, S = true, E = false }
+			}
+			return tostring(GenLib:Password(values))
+		end)
+		if not success then
+			warn("CreatePassword failed:", result)
+			return nil
+		end
+		return result
 	end
 
 	local function CreateHWID()
-		return tostring(GenLib:UUID())
+		local success, result = pcall(function()
+			return tostring(GenLib:UUID())
+		end)
+		if not success then
+			warn("CreateHWID failed:", result)
+			return nil
+		end
+		return result
 	end
 
 	local AC
@@ -8871,12 +8892,40 @@ run(function()
 		Function = function(callback)
 			if not callback then return end
 
-			-- Show processing notification
 			vape:CreateNotification("Account Creator", "Creating account...", 3, "info")
+			print("[AC] Starting account creation")
+
+			-- Check if GenLib exists
+			if not GenLib then
+				vape:CreateNotification("Account Creator", "GenLib not found!", 5, "alert")
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] GenLib found")
 
 			local NU = CreateUsername()
+			if not NU then
+				vape:CreateNotification("Account Creator", "Failed to generate username!", 5, "alert")
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] Username created:", NU)
+
 			local NP = CreatePassword()
+			if not NP then
+				vape:CreateNotification("Account Creator", "Failed to generate password!", 5, "alert")
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] Password created")
+
 			local NH = CreateHWID()
+			if not NH then
+				vape:CreateNotification("Account Creator", "Failed to generate HWID!", 5, "alert")
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] HWID created")
 
 			-- username length check
 			if #NU ~= 4 then
@@ -8886,16 +8935,35 @@ run(function()
 					10,
 					"warning"
 				)
-				AC:Toggle(false) -- turn off after error
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] Username length validated")
+
+			-- Check if loginlib exists
+			if not loginlib then
+				vape:CreateNotification("Account Creator", "loginlib not found!", 5, "alert")
+				AC:Toggle(false)
+				return
+			end
+			print("[AC] Attempting to create account with loginlib")
+
+			local success, db, msg = pcall(function()
+				return loginlib:CreateAccount(NU, NP, NH)
+			end)
+
+			if not success then
+				vape:CreateNotification("Account Creator", "CreateAccount errored: " .. tostring(db), 10, "alert")
+				AC:Toggle(false)
 				return
 			end
 
-			local db, msg = loginlib:CreateAccount(NU, NP, NH)
 			if not db then
 				vape:CreateNotification("Onyx", msg or "403 error", 30, "alert")
-				AC:Toggle(false) -- turn off after error
+				AC:Toggle(false)
 				return
 			end
+			print("[AC] Account created successfully")
 
 			-- properly formatted injection string
 			local Injection = string.format([[
@@ -8919,7 +8987,6 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Subbico/ReVapeForRobl
 
 			task.wait(3)
 			
-			-- turn off module before uninject
 			AC:Toggle(false)
 			vape:Uninject()
 		end
