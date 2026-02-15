@@ -4676,10 +4676,12 @@ Scaffold = vape.Categories.Utility:CreateModule({
                 if towerThread then return end
                 towerThread = task.spawn(function()
                     local lastBlockPos = nil
+                    local wasMoving = false -- Track previous movement state
                     while Scaffold.Enabled and Tower.Enabled and (inputService:IsKeyDown(Enum.KeyCode.Space) or
                         (inputService.TouchEnabled and lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton.ImageTransparency < 1)) do
                         local currentTime = tick()
                         local isMoving = entitylib.character.Humanoid.MoveDirection.Magnitude > 0
+                        local movementChanged = (isMoving ~= wasMoving) -- Detect if movement state changed
                         local velocity = isMoving and TowerVelocity.Value or 38
                         local blocksToPlace = isMoving and TowerBlocks.Value or 1
                         
@@ -4699,7 +4701,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                         -- Play appropriate animation based on movement
                                         if isMoving then
                                             -- Moving while going up - play player's jump animation
-                                            if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying) then
+                                            if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying or movementChanged) then
                                                 stopAllAnimations()
                                                 jumpTrack = humanoid:LoadAnimation(playerJumpAnim)
                                                 jumpTrack.Priority = Enum.AnimationPriority.Action4
@@ -4707,7 +4709,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                             end
                                         else
                                             -- Not moving while going up - play idle animation
-                                            if not idleTrack or not idleTrack.IsPlaying then
+                                            if not idleTrack or not idleTrack.IsPlaying or movementChanged then
                                                 stopAllAnimations()
                                                 idleTrack = humanoid:LoadAnimation(idleAnim)
                                                 idleTrack.Priority = Enum.AnimationPriority.Action4
@@ -4721,7 +4723,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                             
                                             if isMoving then
                                                 -- Moving while going down - play player's fall animation
-                                                if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying) then
+                                                if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying or movementChanged) then
                                                     stopAllAnimations()
                                                     fallTrack = humanoid:LoadAnimation(playerFallAnim)
                                                     fallTrack.Priority = Enum.AnimationPriority.Action4
@@ -4729,7 +4731,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                                 end
                                             else
                                                 -- Not moving while going down - play idle animation
-                                                if not idleTrack or not idleTrack.IsPlaying then
+                                                if not idleTrack or not idleTrack.IsPlaying or movementChanged then
                                                     stopAllAnimations()
                                                     idleTrack = humanoid:LoadAnimation(idleAnim)
                                                     idleTrack.Priority = Enum.AnimationPriority.Action4
@@ -4762,6 +4764,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                 end
                             end
                         end
+                        wasMoving = isMoving -- Update movement state tracker
                         task.wait(0.01)
                     end
                     towerThread = nil
