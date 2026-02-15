@@ -8847,7 +8847,6 @@ run(function()
 	})
 end)
 
-
 run(function()
 	local function CreateUsername()
 		return tostring(GenLib:Username())
@@ -8872,8 +8871,8 @@ run(function()
 		Function = function(callback)
 			if not callback then return end
 
-			-- instantly turn off module
-			AC:Toggle(false)
+			-- Show processing notification
+			vape:CreateNotification("Account Creator", "Creating account...", 3, "info")
 
 			local NU = CreateUsername()
 			local NP = CreatePassword()
@@ -8887,12 +8886,14 @@ run(function()
 					10,
 					"warning"
 				)
+				AC:Toggle(false) -- turn off after error
 				return
 			end
 
 			local db, msg = loginlib:CreateAccount(NU, NP, NH)
 			if not db then
 				vape:CreateNotification("Onyx", msg or "403 error", 30, "alert")
+				AC:Toggle(false) -- turn off after error
 				return
 			end
 
@@ -8917,6 +8918,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Subbico/ReVapeForRobl
 			)
 
 			task.wait(3)
+			
+			-- turn off module before uninject
+			AC:Toggle(false)
 			vape:Uninject()
 		end
 	})
