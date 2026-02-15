@@ -4578,20 +4578,50 @@ local function getScaffoldBlock()
 end
 
 -- Animation manipulation
-local jumpAnim = Instance.new("Animation")
-jumpAnim.AnimationId = "http://www.roblox.com/asset/?id=507765000"
-local fallAnim = Instance.new("Animation")
-fallAnim.AnimationId = "http://www.roblox.com/asset/?id=507767968"
 local idleAnim = Instance.new("Animation")
 idleAnim.AnimationId = "http://www.roblox.com/asset/?id=507766388" -- Idle animation
 local jumpTrack, fallTrack, idleTrack
 local disabledAnimations = {}
+local playerJumpAnim, playerFallAnim
+
+-- Helper function to get player's current jump and fall animations
+local function getPlayerAnimations(character)
+    pcall(function()
+        local animate = character:FindFirstChild("Animate")
+        if animate then
+            -- Get player's current jump animation
+            local jumpFolder = animate:FindFirstChild("jump")
+            if jumpFolder then
+                local jumpAnimObj = jumpFolder:FindFirstChildOfClass("Animation")
+                if jumpAnimObj and jumpAnimObj.AnimationId ~= "" then
+                    playerJumpAnim = Instance.new("Animation")
+                    playerJumpAnim.AnimationId = jumpAnimObj.AnimationId
+                end
+            end
+            
+            -- Get player's current fall animation
+            local fallFolder = animate:FindFirstChild("fall")
+            if fallFolder then
+                local fallAnimObj = fallFolder:FindFirstChildOfClass("Animation")
+                if fallAnimObj and fallAnimObj.AnimationId ~= "" then
+                    playerFallAnim = Instance.new("Animation")
+                    playerFallAnim.AnimationId = fallAnimObj.AnimationId
+                end
+            end
+        end
+    end)
+end
 
 -- Helper function to disable default animations
 local function disableDefaultAnimations(character)
     pcall(function()
         local animate = character:FindFirstChild("Animate")
         if animate then
+            -- Get player's animations before disabling
+            if not playerJumpAnim or not playerFallAnim then
+                getPlayerAnimations(character)
+            end
+            
             -- Disable jump, fall, and walk animations
             local animsToDisable = {"jump", "fall", "walk", "idle"}
             for _, animName in ipairs(animsToDisable) do
@@ -4668,10 +4698,10 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                         
                                         -- Play appropriate animation based on movement
                                         if isMoving then
-                                            -- Moving while going up - play jump animation
-                                            if not jumpTrack or not jumpTrack.IsPlaying then
+                                            -- Moving while going up - play player's jump animation
+                                            if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying) then
                                                 stopAllAnimations()
-                                                jumpTrack = humanoid:LoadAnimation(jumpAnim)
+                                                jumpTrack = humanoid:LoadAnimation(playerJumpAnim)
                                                 jumpTrack.Priority = Enum.AnimationPriority.Action4
                                                 jumpTrack:Play()
                                             end
@@ -4690,10 +4720,10 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                             disableDefaultAnimations(entitylib.character)
                                             
                                             if isMoving then
-                                                -- Moving while going down - play fall animation
-                                                if not fallTrack or not fallTrack.IsPlaying then
+                                                -- Moving while going down - play player's fall animation
+                                                if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying) then
                                                     stopAllAnimations()
-                                                    fallTrack = humanoid:LoadAnimation(fallAnim)
+                                                    fallTrack = humanoid:LoadAnimation(playerFallAnim)
                                                     fallTrack.Priority = Enum.AnimationPriority.Action4
                                                     fallTrack:Play()
                                                 end
