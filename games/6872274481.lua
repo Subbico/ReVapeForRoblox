@@ -4582,7 +4582,54 @@ local jumpAnim = Instance.new("Animation")
 jumpAnim.AnimationId = "http://www.roblox.com/asset/?id=507765000"
 local fallAnim = Instance.new("Animation")
 fallAnim.AnimationId = "http://www.roblox.com/asset/?id=507767968"
-local jumpTrack, fallTrack
+local idleAnim = Instance.new("Animation")
+idleAnim.AnimationId = "http://www.roblox.com/asset/?id=507766388" -- Idle animation
+local jumpTrack, fallTrack, idleTrack
+local disabledAnimations = {}
+
+-- Helper function to disable default animations
+local function disableDefaultAnimations(character)
+    pcall(function()
+        local animate = character:FindFirstChild("Animate")
+        if animate then
+            -- Disable jump, fall, and walk animations
+            local animsToDisable = {"jump", "fall", "walk", "idle"}
+            for _, animName in ipairs(animsToDisable) do
+                local animFolder = animate:FindFirstChild(animName)
+                if animFolder then
+                    for _, anim in ipairs(animFolder:GetChildren()) do
+                        if anim:IsA("Animation") then
+                            anim.AnimationId = ""
+                            table.insert(disabledAnimations, {anim = anim, original = anim.AnimationId})
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Helper function to restore default animations
+local function restoreDefaultAnimations()
+    pcall(function()
+        for _, data in ipairs(disabledAnimations) do
+            if data.anim then
+                data.anim.AnimationId = data.original
+            end
+        end
+        disabledAnimations = {}
+    end)
+end
+
+-- Helper function to stop all custom animation tracks
+local function stopAllAnimations()
+    if jumpTrack then jumpTrack:Stop() end
+    if fallTrack then fallTrack:Stop() end
+    if idleTrack then idleTrack:Stop() end
+    jumpTrack = nil
+    fallTrack = nil
+    idleTrack = nil
+end
 
 Scaffold = vape.Categories.Utility:CreateModule({
     Name = 'Scaffold',
@@ -4616,20 +4663,49 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                     if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
                                         root.Velocity = Vector3.new(root.Velocity.X, velocity, root.Velocity.Z)
                                         
-                                        -- Play jump animation when going up
-                                        if not jumpTrack or not jumpTrack.IsPlaying then
-                                            if fallTrack then fallTrack:Stop() end
-                                            jumpTrack = humanoid:LoadAnimation(jumpAnim)
-                                            jumpTrack.Priority = Enum.AnimationPriority.Action
-                                            jumpTrack:Play()
+                                        -- Disable default animations
+                                        disableDefaultAnimations(entitylib.character)
+                                        
+                                        -- Play appropriate animation based on movement
+                                        if isMoving then
+                                            -- Moving while going up - play jump animation
+                                            if not jumpTrack or not jumpTrack.IsPlaying then
+                                                stopAllAnimations()
+                                                jumpTrack = humanoid:LoadAnimation(jumpAnim)
+                                                jumpTrack.Priority = Enum.AnimationPriority.Action4
+                                                jumpTrack:Play()
+                                            end
+                                        else
+                                            -- Not moving while going up - play idle animation
+                                            if not idleTrack or not idleTrack.IsPlaying then
+                                                stopAllAnimations()
+                                                idleTrack = humanoid:LoadAnimation(idleAnim)
+                                                idleTrack.Priority = Enum.AnimationPriority.Action4
+                                                idleTrack:Play()
+                                            end
                                         end
                                     else
-                                        -- Play fall animation when going down (not applying upward velocity)
-                                        if root.Velocity.Y < 0 and (not fallTrack or not fallTrack.IsPlaying) then
-                                            if jumpTrack then jumpTrack:Stop() end
-                                            fallTrack = humanoid:LoadAnimation(fallAnim)
-                                            fallTrack.Priority = Enum.AnimationPriority.Action
-                                            fallTrack:Play()
+                                        -- Going down (not applying upward velocity)
+                                        if root.Velocity.Y < 0 then
+                                            disableDefaultAnimations(entitylib.character)
+                                            
+                                            if isMoving then
+                                                -- Moving while going down - play fall animation
+                                                if not fallTrack or not fallTrack.IsPlaying then
+                                                    stopAllAnimations()
+                                                    fallTrack = humanoid:LoadAnimation(fallAnim)
+                                                    fallTrack.Priority = Enum.AnimationPriority.Action4
+                                                    fallTrack:Play()
+                                                end
+                                            else
+                                                -- Not moving while going down - play idle animation
+                                                if not idleTrack or not idleTrack.IsPlaying then
+                                                    stopAllAnimations()
+                                                    idleTrack = humanoid:LoadAnimation(idleAnim)
+                                                    idleTrack.Priority = Enum.AnimationPriority.Action4
+                                                    idleTrack:Play()
+                                                end
+                                            end
                                         end
                                     end
                                     
@@ -4667,11 +4743,9 @@ Scaffold = vape.Categories.Utility:CreateModule({
                     task.cancel(towerThread)
                     towerThread = nil
                 end
-                -- Stop animation tracks when stopping tower
-                if jumpTrack then jumpTrack:Stop() end
-                if fallTrack then fallTrack:Stop() end
-                jumpTrack = nil
-                fallTrack = nil
+                -- Stop animation tracks and restore defaults when stopping tower
+                stopAllAnimations()
+                restoreDefaultAnimations()
             end
             
             -- Input handlers for tower
@@ -4758,11 +4832,9 @@ Scaffold = vape.Categories.Utility:CreateModule({
             until not Scaffold.Enabled
         else
             Label = nil
-            -- Stop tracks when disabling
-            if jumpTrack then jumpTrack:Stop() end
-            if fallTrack then fallTrack:Stop() end
-            jumpTrack = nil
-            fallTrack = nil
+            -- Stop tracks and restore animations when disabling
+            stopAllAnimations()
+            restoreDefaultAnimations()
         end
     end,
     Tooltip = 'Helps you make bridges/scaffold walk.'
