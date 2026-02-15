@@ -3094,6 +3094,56 @@ local function switchBackToPreviousTool()
     return false
 end
 
+-- Function to play projectile throwing animation
+local function playProjectileAnimation(tool)
+    if not entitylib.isAlive then return end
+    
+    pcall(function()
+        local humanoid = entitylib.character.Humanoid
+        if not humanoid then return end
+        
+        -- Try to find the tool object in the character
+        local equippedTool = nil
+        if tool then
+            equippedTool = entitylib.character:FindFirstChild(tool.Name)
+        end
+        
+        -- Check if the tool has an animation
+        local toolAnim = equippedTool and equippedTool:FindFirstChild("Animation")
+        if toolAnim and toolAnim:IsA("Animation") and toolAnim.AnimationId ~= "" then
+            -- Play the tool's animation
+            local animTrack = humanoid:LoadAnimation(toolAnim)
+            if animTrack then
+                animTrack.Priority = Enum.AnimationPriority.Action2
+                animTrack:Play()
+                
+                -- Stop the animation after a short duration
+                task.delay(0.4, function()
+                    if animTrack then
+                        animTrack:Stop()
+                    end
+                end)
+            end
+        else
+            -- Fallback to default throw animation if tool has no animation
+            local throwAnim = Instance.new("Animation")
+            throwAnim.AnimationId = "rbxassetid://522635514" -- Default throw animation
+            
+            local animTrack = humanoid:LoadAnimation(throwAnim)
+            if animTrack then
+                animTrack.Priority = Enum.AnimationPriority.Action2
+                animTrack:Play()
+                
+                task.delay(0.4, function()
+                    if animTrack then
+                        animTrack:Stop()
+                    end
+                end)
+            end
+        end
+    end)
+end
+
 -- Update the projectile handling with ToolCheck support
 local function handleProjectileSwitch(item, itemMeta)
     local switched = false
@@ -3194,6 +3244,9 @@ ProjectileAura = vape.Categories.Blatant:CreateModule({
                                 if calc then
                                     targetinfo.Targets[ent] = tick() + 1
                                     local switched = handleProjectileSwitch(item, itemMeta)
+                                    
+                                    -- Play the projectile throwing animation
+                                    playProjectileAnimation(item.tool)
                                     
                                     task.spawn(function()
                                         local dir = CFrame.lookAt(shootPosition, calc).LookVector
@@ -4685,30 +4738,50 @@ Scaffold = vape.Categories.Utility:CreateModule({
                         local velocity = isMoving and TowerVelocity.Value or 38
                         local blocksToPlace = isMoving and TowerBlocks.Value or 1
                         
-                        if currentTime - lastPlace >= (1 / TowerCPS.GetRandomValue()) then
-                            if entitylib.isAlive then
-                                local root = entitylib.character.RootPart
-                                local humanoid = entitylib.character.Humanoid
-                                if root and humanoid then
-                                    local wool = getScaffoldBlock()
-                                    -- Only apply velocity if we have blocks or LimitItem is off
-                                    if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        root.Velocity = Vector3.new(root.Velocity.X, velocity, root.Velocity.Z)
-                                        
-                                        -- Disable default animations
+                        if entitylib.isAlive then
+                            local root = entitylib.character.RootPart
+                            local humanoid = entitylib.character.Humanoid
+                            if root and humanoid then
+                                local wool = getScaffoldBlock()
+                                
+                                -- Handle animations every frame (outside of CPS check)
+                                if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+                                    -- Disable default animations
+                                    disableDefaultAnimations(entitylib.character)
+                                    
+                                    -- Play appropriate animation based on movement
+                                    if isMoving then
+                                        -- Moving while going up - play player's jump animation
+                                        if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying or movementChanged) then
+                                            stopAllAnimations()
+                                            jumpTrack = humanoid:LoadAnimation(playerJumpAnim)
+                                            jumpTrack.Priority = Enum.AnimationPriority.Action4
+                                            jumpTrack:Play()
+                                        end
+                                    else
+                                        -- Not moving while going up - play idle animation
+                                        if not idleTrack or not idleTrack.IsPlaying or movementChanged then
+                                            stopAllAnimations()
+                                            idleTrack = humanoid:LoadAnimation(idleAnim)
+                                            idleTrack.Priority = Enum.AnimationPriority.Action4
+                                            idleTrack:Play()
+                                        end
+                                    end
+                                else
+                                    -- Going down (not applying upward velocity)
+                                    if root.Velocity.Y < 0 then
                                         disableDefaultAnimations(entitylib.character)
                                         
-                                        -- Play appropriate animation based on movement
                                         if isMoving then
-                                            -- Moving while going up - play player's jump animation
-                                            if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying or movementChanged) then
+                                            -- Moving while going down - play player's fall animation
+                                            if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying or movementChanged) then
                                                 stopAllAnimations()
-                                                jumpTrack = humanoid:LoadAnimation(playerJumpAnim)
-                                                jumpTrack.Priority = Enum.AnimationPriority.Action4
-                                                jumpTrack:Play()
+                                                fallTrack = humanoid:LoadAnimation(playerFallAnim)
+                                                fallTrack.Priority = Enum.AnimationPriority.Action4
+                                                fallTrack:Play()
                                             end
                                         else
-                                            -- Not moving while going up - play idle animation
+                                            -- Not moving while going down - play idle animation
                                             if not idleTrack or not idleTrack.IsPlaying or movementChanged then
                                                 stopAllAnimations()
                                                 idleTrack = humanoid:LoadAnimation(idleAnim)
@@ -4716,29 +4789,14 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                                 idleTrack:Play()
                                             end
                                         end
-                                    else
-                                        -- Going down (not applying upward velocity)
-                                        if root.Velocity.Y < 0 then
-                                            disableDefaultAnimations(entitylib.character)
-                                            
-                                            if isMoving then
-                                                -- Moving while going down - play player's fall animation
-                                                if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying or movementChanged) then
-                                                    stopAllAnimations()
-                                                    fallTrack = humanoid:LoadAnimation(playerFallAnim)
-                                                    fallTrack.Priority = Enum.AnimationPriority.Action4
-                                                    fallTrack:Play()
-                                                end
-                                            else
-                                                -- Not moving while going down - play idle animation
-                                                if not idleTrack or not idleTrack.IsPlaying or movementChanged then
-                                                    stopAllAnimations()
-                                                    idleTrack = humanoid:LoadAnimation(idleAnim)
-                                                    idleTrack.Priority = Enum.AnimationPriority.Action4
-                                                    idleTrack:Play()
-                                                end
-                                            end
-                                        end
+                                    end
+                                end
+                                
+                                -- Block placement logic (with CPS limiting)
+                                if currentTime - lastPlace >= (1 / TowerCPS.GetRandomValue()) then
+                                    -- Only apply velocity if we have blocks or LimitItem is off
+                                    if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+                                        root.Velocity = Vector3.new(root.Velocity.X, velocity, root.Velocity.Z)
                                     end
                                     
                                     -- Place blocks if we have them
