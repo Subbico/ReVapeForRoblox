@@ -240,7 +240,7 @@ run(function()
 		S = "guest"
 		U = "GUEST"
 	end
-	vape.role = S 
+	vape.role = owner 
 	vape.user = U
 	R = S
 	UR = U
@@ -404,7 +404,7 @@ end)
 
 run(function()
 	local S,U,P = loginlib:SlientLogin()
-	vape.role = S 
+	vape.role = owner 
 	vape.user = U
 end)
 

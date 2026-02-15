@@ -16,7 +16,7 @@ local role = vape.role
 local user = vape.user
 task.spawn(function()
 	while task.wait(.1) do
-		vape.role = role
+		vape.role = owner
 		vape.user = user
 	end
 end)
