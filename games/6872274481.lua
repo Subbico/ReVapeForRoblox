@@ -4567,9 +4567,8 @@ end
 local lastpos = Vector3.zero
 local label
 local lastPlace = 0
-local lastPlacementTime = 0 -- For rate limiting
+local lastPlacementTime = 0
 
--- Optimized corner check using cached unit vectors
 local function nearCorner(poscheck, pos)
     local offset = Vector3.new(3, 3, 3)
     local startpos = poscheck - offset
@@ -4583,7 +4582,6 @@ local function nearCorner(poscheck, pos)
     )
 end
 
--- Optimized block proximity check with local caching
 local function blockProximity(pos)
     local mag = 60
     local returned
@@ -4603,7 +4601,6 @@ local function blockProximity(pos)
     return returned
 end
 
--- Optimized adjacent check
 local function checkAdjacent(pos)
     for i = 1, #adjacent do
         if getPlacedBlock(pos + adjacent[i]) then
@@ -4630,19 +4627,16 @@ local function getScaffoldBlock()
     return nil, 0
 end
 
--- Animation manipulation
 local idleAnim = Instance.new("Animation")
-idleAnim.AnimationId = "http://www.roblox.com/asset/?id=507766388" -- Idle animation
+idleAnim.AnimationId = "http://www.roblox.com/asset/?id=507766388"
 local jumpTrack, fallTrack, idleTrack
 local disabledAnimations = {}
 local playerJumpAnim, playerFallAnim
 
--- Helper function to get player's current jump and fall animations
 local function getPlayerAnimations(character)
     pcall(function()
         local animate = character:FindFirstChild("Animate")
         if animate then
-            -- Get player's current jump animation
             local jumpFolder = animate:FindFirstChild("jump")
             if jumpFolder then
                 local jumpAnimObj = jumpFolder:FindFirstChildOfClass("Animation")
@@ -4651,8 +4645,6 @@ local function getPlayerAnimations(character)
                     playerJumpAnim.AnimationId = jumpAnimObj.AnimationId
                 end
             end
-            
-            -- Get player's current fall animation
             local fallFolder = animate:FindFirstChild("fall")
             if fallFolder then
                 local fallAnimObj = fallFolder:FindFirstChildOfClass("Animation")
@@ -4665,17 +4657,13 @@ local function getPlayerAnimations(character)
     end)
 end
 
--- Helper function to disable default animations
 local function disableDefaultAnimations(character)
     pcall(function()
         local animate = character:FindFirstChild("Animate")
         if animate then
-            -- Get player's animations before disabling
             if not playerJumpAnim or not playerFallAnim then
                 getPlayerAnimations(character)
             end
-            
-            -- Disable jump, fall, and walk animations
             local animsToDisable = {"jump", "fall", "walk", "idle"}
             for _, animName in ipairs(animsToDisable) do
                 local animFolder = animate:FindFirstChild(animName)
@@ -4692,7 +4680,6 @@ local function disableDefaultAnimations(character)
     end)
 end
 
--- Helper function to restore default animations
 local function restoreDefaultAnimations()
     pcall(function()
         for _, data in ipairs(disabledAnimations) do
@@ -4704,7 +4691,6 @@ local function restoreDefaultAnimations()
     end)
 end
 
--- Helper function to stop all custom animation tracks
 local function stopAllAnimations()
     if jumpTrack then jumpTrack:Stop() end
     if fallTrack then fallTrack:Stop() end
@@ -4723,35 +4709,37 @@ Scaffold = vape.Categories.Utility:CreateModule({
 
         if callback then
             local towerThread
-            
-            -- Fast tower building with CPS and animation manipulation
+
             local function startTowerBuild()
                 if towerThread then return end
+                -- Mouse toggle check: if Mouse is enabled and left mouse is not held, block tower
+                if Mouse.Enabled and not inputService:IsMouseButtonPressed(0) then return end
                 towerThread = task.spawn(function()
                     local lastBlockPos = nil
-                    local wasMoving = false -- Track previous movement state
+                    local wasMoving = false
                     while Scaffold.Enabled and Tower.Enabled and (inputService:IsKeyDown(Enum.KeyCode.Space) or
                         (inputService.TouchEnabled and lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton.ImageTransparency < 1)) do
+
+                        -- If Mouse is enabled and mouse is released mid-tower, stop
+                        if Mouse.Enabled and not inputService:IsMouseButtonPressed(0) then
+                            break
+                        end
+
                         local currentTime = tick()
                         local isMoving = entitylib.character.Humanoid.MoveDirection.Magnitude > 0
-                        local movementChanged = (isMoving ~= wasMoving) -- Detect if movement state changed
+                        local movementChanged = (isMoving ~= wasMoving)
                         local velocity = isMoving and TowerVelocity.Value or 38
-                        local blocksToPlace = isMoving and TowerBlocks.Value or 1
-                        
+
                         if entitylib.isAlive then
                             local root = entitylib.character.RootPart
                             local humanoid = entitylib.character.Humanoid
                             if root and humanoid then
                                 local wool = getScaffoldBlock()
-                                
-                                -- Handle animations every frame (outside of CPS check)
+
                                 if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                    -- Disable default animations
                                     disableDefaultAnimations(entitylib.character)
-                                    
-                                    -- Play appropriate animation based on movement
+
                                     if isMoving then
-                                        -- Moving while going up - play player's jump animation
                                         if playerJumpAnim and (not jumpTrack or not jumpTrack.IsPlaying or movementChanged) then
                                             stopAllAnimations()
                                             jumpTrack = humanoid:LoadAnimation(playerJumpAnim)
@@ -4759,7 +4747,6 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                             jumpTrack:Play()
                                         end
                                     else
-                                        -- Not moving while going up - play idle animation
                                         if not idleTrack or not idleTrack.IsPlaying or movementChanged then
                                             stopAllAnimations()
                                             idleTrack = humanoid:LoadAnimation(idleAnim)
@@ -4768,12 +4755,10 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                         end
                                     end
                                 else
-                                    -- Going down (not applying upward velocity)
                                     if root.Velocity.Y < 0 then
                                         disableDefaultAnimations(entitylib.character)
-                                        
+
                                         if isMoving then
-                                            -- Moving while going down - play player's fall animation
                                             if playerFallAnim and (not fallTrack or not fallTrack.IsPlaying or movementChanged) then
                                                 stopAllAnimations()
                                                 fallTrack = humanoid:LoadAnimation(playerFallAnim)
@@ -4781,7 +4766,6 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                                 fallTrack:Play()
                                             end
                                         else
-                                            -- Not moving while going down - play idle animation
                                             if not idleTrack or not idleTrack.IsPlaying or movementChanged then
                                                 stopAllAnimations()
                                                 idleTrack = humanoid:LoadAnimation(idleAnim)
@@ -4791,21 +4775,18 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                         end
                                     end
                                 end
-                                
-                                -- Block placement logic (with CPS limiting)
+
                                 if currentTime - lastPlace >= (1 / TowerCPS.GetRandomValue()) then
-                                    -- Only apply velocity if we have blocks or LimitItem is off
                                     if (wool or not LimitItem.Enabled) and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
                                         root.Velocity = Vector3.new(root.Velocity.X, velocity, root.Velocity.Z)
                                     end
-                                    
-                                    -- Place blocks if we have them
+
                                     if wool and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-                                        for i = 1, blocksToPlace do
+                                        -- Hardcoded to 4 blocks (TowerBlocks slider removed)
+                                        for i = 1, 4 do
                                             local pos = root.Position - Vector3.new(0, entitylib.character.HipHeight + 1.5 + (i * 3), 0)
                                             local roundedPos = roundPos(pos)
-                                            
-                                            -- Only do proximity check if position changed
+
                                             if lastBlockPos ~= roundedPos then
                                                 local block, blockpos = getPlacedBlock(roundedPos)
                                                 if not block then
@@ -4822,37 +4803,34 @@ Scaffold = vape.Categories.Utility:CreateModule({
                                 end
                             end
                         end
-                        wasMoving = isMoving -- Update movement state tracker
+                        wasMoving = isMoving
                         task.wait(0.01)
                     end
                     towerThread = nil
                 end)
             end
-            
+
             local function stopTowerBuild()
                 if towerThread then
                     task.cancel(towerThread)
                     towerThread = nil
                 end
-                -- Stop animation tracks and restore defaults when stopping tower
                 stopAllAnimations()
                 restoreDefaultAnimations()
             end
-            
-            -- Input handlers for tower
+
             Scaffold:Clean(inputService.InputBegan:Connect(function(input)
                 if input.KeyCode == Enum.KeyCode.Space and Tower.Enabled then
                     startTowerBuild()
                 end
             end))
-            
+
             Scaffold:Clean(inputService.InputEnded:Connect(function(input)
                 if input.KeyCode == Enum.KeyCode.Space then
                     stopTowerBuild()
                 end
             end))
-            
-            -- Mobile support
+
             if inputService.TouchEnabled then
                 pcall(function()
                     local touchGui = lplr.PlayerGui:WaitForChild("TouchGui", 2)
@@ -4873,6 +4851,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
                 if entitylib.isAlive then
                     local wool, amount = getScaffoldBlock()
 
+                    -- Fixed Mouse toggle: suppress wool for both scaffold and tower-adjacent logic
                     if Mouse.Enabled and not inputService:IsMouseButtonPressed(0) then
                         wool = nil
                     end
@@ -4890,17 +4869,15 @@ Scaffold = vape.Categories.Utility:CreateModule({
                         local downOffset = Downwards.Enabled and inputService:IsKeyDown(Enum.KeyCode.LeftShift) and 4.5 or 1.5
                         local basePos = root.Position - Vector3.new(0, hipHeight + downOffset, 0)
 
-                        -- Smoother placement: 1-stud intervals with rate limiting
-                        local expandValue = type(ExpandTwo.Value) == "table" and ExpandTwo.Value[2] or Expand.Value
-                        for i = 1, expandValue do
-                            if tick() - lastPlacementTime < 0.02 then break end -- Rate limit: max 50 placements/sec
+                        for i = 1, Expand.Value do
+                            if tick() - lastPlacementTime < 0.02 then break end
                             local currentpos = roundPos(basePos + moveDir * i)
-                            
+
                             if Diagonal.Enabled then
                                 local angle = math.abs(math.round(math.deg(math.atan2(-moveDir.X, -moveDir.Z)) / 45) * 45)
                                 if angle % 90 == 45 then
                                     local dt = (lastpos - currentpos)
-                                    if ((dt.X == 0 and dt.Z ~= 0) or (dt.X ~= 0 and dt.Z == 0)) and 
+                                    if ((dt.X == 0 and dt.Z ~= 0) or (dt.X ~= 0 and dt.Z == 0)) and
                                        ((lastpos - root.Position) * Vector3.new(1, 0, 1)).Magnitude < 2.5 then
                                         currentpos = lastpos
                                     end
@@ -4923,7 +4900,6 @@ Scaffold = vape.Categories.Utility:CreateModule({
             until not Scaffold.Enabled
         else
             Label = nil
-            -- Stop tracks and restore animations when disabling
             stopAllAnimations()
             restoreDefaultAnimations()
         end
@@ -4936,15 +4912,6 @@ Expand = Scaffold:CreateSlider({
     Min = 1,
     Max = 6,
     Default = 3
-})
-
-ExpandTwo = Scaffold:CreateTwoSlider({
-    Name = 'Expand Two',
-    Min = 1,
-    Max = 6,
-    DefaultMin = 1,
-    DefaultMax = 3,
-    Darker = true
 })
 
 Tower = Scaffold:CreateToggle({
@@ -5004,13 +4971,7 @@ TowerVelocity = Scaffold:CreateSlider({
     Default = 38
 })
 
-TowerBlocks = Scaffold:CreateSlider({
-    Name = 'Tower Blocks',
-    Min = 1,
-    Max = 4,
-    Default = 1
-})
-	
+
 --[[run(function()
 	local ShopTierBypass
 	local tiered, nexttier = {}, {}
